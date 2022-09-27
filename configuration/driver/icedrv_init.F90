@@ -652,8 +652,8 @@
                                trim(restart_dir)
          write(nu_diag,*)    ' restart_type               = ', &
                                trim(restart_type)
-         write(nu_diag,1020) ' input_lat                 = ', input_lat
-         write(nu_diag,1020) ' input_lon                 = ', input_lon
+         write(nu_diag,1000) ' input_lat                 = ', input_lat
+         write(nu_diag,1000) ' input_lon                 = ', input_lon
          write(nu_diag,*)    ' restart_file              = ', &
                                trim(restart_file)
          write(nu_diag,1010) ' history_cdf               = ', history_cdf
