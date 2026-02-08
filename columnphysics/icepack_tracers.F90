@@ -224,7 +224,7 @@
              tr_pond_topo_in , & ! if .true., use explicit topography-based ponds
              tr_pond_sealvl_in,& ! if .true., use sealvl pond parameteriztion
              tr_snow_in      , & ! if .true., use snow redistribution or metamorphosis tracers
-             tr_snoice_in    , & ! if .true., use snow redistribution or metamorphosis tracers
+             tr_snoice_in    , & ! if .true., use snow-ice depth tracer
              tr_fsd_in       , & ! if .true., use floe size distribution tracers
              tr_iso_in       , & ! if .true., use isotope tracers
              tr_aero_in      , & ! if .true., use aerosol tracers
@@ -318,7 +318,7 @@
              tr_pond_topo_out , & ! if .true., use explicit topography-based ponds
              tr_pond_sealvl_out,& ! if .true., use sealvl pond parameterization
              tr_snow_out      , & ! if .true., use snow redistribution or metamorphosis tracers
-             tr_snoice_out    , & ! if .true., use snow-ice layer tracers
+             tr_snoice_out    , & ! if .true., use snow-ice depth tracer
              tr_fsd_out       , & ! if .true., use floe size distribution
              tr_iso_out       , & ! if .true., use isotope tracers
              tr_aero_out      , & ! if .true., use aerosol tracers

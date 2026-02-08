@@ -36,7 +36,7 @@
       use icepack_tracers,    only: n_iso, tr_iso, nt_smice, nt_rsnw, nt_rhos, nt_sice
       use icepack_tracers,    only: icepack_compute_tracers
       use icepack_parameters, only: skl_bgc, z_tracers, hi_min
-      use icepack_parameters, only: kcatbound, kitd, saltflux_option, snwgrain, snwredist
+      use icepack_parameters, only: kcatbound, kitd, saltflux_option, snwgrain, snwredist, landfast
       use icepack_therm_shared, only: Tmin
       use icepack_warnings,   only: warnstr, icepack_warnings_add
       use icepack_warnings,   only: icepack_warnings_setabort, icepack_warnings_aborted
@@ -344,7 +344,7 @@
                dhi = hi1 - hi0
                if (dhi < c0) then
                   hi1  = vicen / aicen
-                  aicen = c2 * vicen / (hi1 + hi0)
+                  if (.not. landfast)    aicen = c2 * vicen / (hi1 + hi0)
                endif
             endif
 

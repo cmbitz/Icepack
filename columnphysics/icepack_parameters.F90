@@ -313,6 +313,9 @@
                          !   2 = WMO standard
                          !   3 = asymptotic formula
 
+      logical (kind=log_kind), public :: &
+         landfast = .false.          ! if true, turn off reduce_area and lateral melt?
+      
 !-----------------------------------------------------------------------
 ! Parameters for the floe size distribution
 !-----------------------------------------------------------------------
@@ -567,6 +570,7 @@
          cp_ice_in, cp_ocn_in, hfrazilmin_in, floediam_in, &
          depressT_in, dragio_in, thickness_ocn_layer1_in, iceruf_ocn_in, &
          albocn_in, gravit_in, viscosity_dyn_in, tscale_pnd_drain_in, &
+         landfast_in, &
          Tocnfrz_in, rhofresh_in, zvir_in, vonkar_in, cp_wv_in, &
          stefan_boltzmann_in, ice_ref_salinity_in, &
          Tffresh_in, Lsub_in, Lvap_in, Timelt_in, Tsmelt_in, &
@@ -709,6 +713,9 @@
          fbot_xfer_type_in, & ! transfer coefficient type for ice-ocean heat flux
          cpl_frazil_in        ! type of coupling for frazil ice
 
+      logical (kind=log_kind), intent(in), optional :: &
+         landfast_in            ! treat ice as landfast (bare minimum area reduction) 
+           
       logical (kind=log_kind), intent(in), optional :: &
          calc_Tsfc_in    , &! if true, calculate surface temperature
                             ! if false, Tsfc is computed elsewhere and
@@ -1139,6 +1146,7 @@
       if (present(gravit_in)            ) gravit           = gravit_in
       if (present(viscosity_dyn_in)     ) viscosity_dyn    = viscosity_dyn_in
       if (present(tscale_pnd_drain_in)  ) tscale_pnd_drain = tscale_pnd_drain_in
+      if (present(landfast_in)          ) landfast         = landfast_in
       if (present(Tocnfrz_in)           ) Tocnfrz          = Tocnfrz_in
       if (present(rhofresh_in)          ) rhofresh         = rhofresh_in
       if (present(zvir_in)              ) zvir             = zvir_in
@@ -1576,6 +1584,7 @@
          cp_ice_out, cp_ocn_out, hfrazilmin_out, floediam_out, &
          depressT_out, dragio_out, thickness_ocn_layer1_out, iceruf_ocn_out, &
          albocn_out, gravit_out, viscosity_dyn_out, tscale_pnd_drain_out, &
+         landfast_out, &
          Tocnfrz_out, rhofresh_out, zvir_out, vonkar_out, cp_wv_out, &
          stefan_boltzmann_out, ice_ref_salinity_out, &
          Tffresh_out, Lsub_out, Lvap_out, Timelt_out, Tsmelt_out, &
@@ -1734,6 +1743,9 @@
                             ! computed outside at 0C
          update_ocn_f_out   ! include fresh water and salt fluxes for frazil
 
+      logical (kind=log_kind), intent(out), optional :: &
+         landfast_out    ! treat ice as landfast (bare minimum area reduction)
+           
       real (kind=dbl_kind), intent(out), optional :: &
          hi_min_out,  &      ! minimum ice thickness allowed (m) for thermo
          ustar_min_out       ! minimum friction velocity for ice-ocean heat flux
@@ -2189,6 +2201,7 @@
       if (present(gravit_out)            ) gravit_out       = gravit
       if (present(viscosity_dyn_out)     ) viscosity_dyn_out= viscosity_dyn
       if (present(tscale_pnd_drain_out)  ) tscale_pnd_drain_out = tscale_pnd_drain
+      if (present(landfast_out)          ) landfast_out     = landfast
       if (present(Tocnfrz_out)           ) Tocnfrz_out      = Tocnfrz
       if (present(rhofresh_out)          ) rhofresh_out     = rhofresh
       if (present(zvir_out)              ) zvir_out         = zvir
@@ -2587,6 +2600,7 @@
         write(iounit,*) "  saltflux_option = ", trim(saltflux_option)
         write(iounit,*) "  kitd       = ", kitd
         write(iounit,*) "  kcatbound  = ", kcatbound
+        write(iounit,*) "  landfast   = ", landfast
         write(iounit,*) "  floeshape  = ", floeshape
         write(iounit,*) "  wave_spec  = ", wave_spec
         write(iounit,*) "  wave_spec_type = ", trim(wave_spec_type)

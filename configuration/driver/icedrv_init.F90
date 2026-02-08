@@ -121,7 +121,7 @@
       ! Ice reference salinity for fluxes
       real (kind=dbl_kind) :: ice_ref_salinity
 
-      logical (kind=log_kind) :: calc_Tsfc, formdrag, highfreq, calc_strair, calc_dragio
+      logical (kind=log_kind) :: calc_Tsfc, formdrag, highfreq, calc_strair, calc_dragio, landfast
       logical (kind=log_kind) :: conserv_check, semi_implicit_Tsfc, vapor_flux_correction
 
       integer (kind=int_kind) :: ntrcr
@@ -160,7 +160,7 @@
         a_rapid_mode,   Rac_rapid_mode,  aspect_rapid_mode,             &
         dSdt_slow_mode, phi_c_slow_mode, phi_i_mushy,                   &
         floediam,       hfrazilmin,      Tliquidus_max,    hi_min,      &
-        tscale_pnd_drain
+        tscale_pnd_drain, landfast
 
       namelist /dynamics_nml/ &
         kstrength,      krdg_partic,    krdg_redist,    mu_rdg,         &
@@ -236,6 +236,7 @@
            rfracmin_out=rfracmin, rfracmax_out=rfracmax, &
            pndaspect_out=pndaspect, hs1_out=hs1, hp1_out=hp1, &
            apnd_sl_out=apnd_sl, tscale_pnd_drain_out=tscale_pnd_drain, &
+           landfast_out=landfast, &
            ktherm_out=ktherm, calc_Tsfc_out=calc_Tsfc, &
            semi_implicit_Tsfc_out=semi_implicit_Tsfc, &
            vapor_flux_correction_out=vapor_flux_correction, &
@@ -505,6 +506,11 @@
          call icedrv_system_abort(file=__FILE__,line=__LINE__)
       endif
 
+      if (ncat /= 1 .and. landfast) then
+         write (nu_diag,*) 'WARNING: Do not choose landfast option when ncat>0'
+         call icedrv_system_abort(file=__FILE__,line=__LINE__)
+      endif
+      
       if (ncat /= 1 .and. kcatbound == -1) then
          write (nu_diag,*) 'WARNING: ITD required for ncat > 1'
          write (nu_diag,*) 'WARNING: Setting kitd and kcatbound to default values'
@@ -715,6 +721,7 @@
          write(nu_diag,1005) ' sst_init                  = ', sst_init
          write(nu_diag,1010) ' conserv_check             = ', conserv_check
          write(nu_diag,1020) ' kitd                      = ', kitd
+         write(nu_diag,1010) ' landfast                  = ', landfast
          write(nu_diag,1020) ' kcatbound                 = ', kcatbound
          write(nu_diag,1020) ' ndtd                      = ', ndtd
          write(nu_diag,1020) ' kstrength                 = ', kstrength
@@ -1034,6 +1041,7 @@
            rfracmin_in=rfracmin, rfracmax_in=rfracmax, &
            pndaspect_in=pndaspect, hs1_in=hs1, hp1_in=hp1, &
            apnd_sl_in=apnd_sl, tscale_pnd_drain_in=tscale_pnd_drain, &
+           landfast_in=landfast, &
            floediam_in=floediam, hfrazilmin_in=hfrazilmin, &
            ktherm_in=ktherm, calc_Tsfc_in=calc_Tsfc, &
            semi_implicit_Tsfc_in=semi_implicit_Tsfc, &
@@ -1218,7 +1226,7 @@
       enddo
       if (tr_snoice) trcr_depend(nt_hsnoice)  = 1   ! volume-weighted snowice layer depth
       if (tr_iage) trcr_depend(nt_iage)  = 1   ! volume-weighted ice age
-      if (tr_FY)   trcr_depend(nt_FY)    = 0   ! area-weighted first-year ice area
+      if (tr_FY)   trcr_depend(nt_FY)    = 0   ! area-weighted first-year ice age
       if (tr_lvl)  trcr_depend(nt_alvl)  = 0   ! level ice area
       if (tr_lvl)  trcr_depend(nt_vlvl)  = 1   ! level ice volume
       if (tr_pond_lvl) then

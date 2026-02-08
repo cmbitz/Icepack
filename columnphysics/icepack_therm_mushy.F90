@@ -3155,7 +3155,7 @@
     w = c0
 
     ! only flush if ponds are active
-    if (tr_pond) then
+    if ((tr_pond) .and. (hpond>c0)) then
 
        ice_mass  = c0
        perm_harm = c0
@@ -3188,7 +3188,7 @@
 
        ! calculate brine height above bottom of ice
        if (tr_pond_sealvl) then
-          call pond_height(apond, hpond, hin, hbrine)
+          call pond_height(apond, hpond, hin, hsn, hbrine)
           if (icepack_warnings_aborted(subname)) return
        else
           hbrine = hin + hpond
@@ -3269,7 +3269,7 @@
           dpnd_flush = -dhpond * apond
           ! update pond depth (and area)
           if (tr_pond_sealvl) then
-               call pond_hypsometry(hpond, apond, dhpond=dhpond, hin=hin)
+               call pond_hypsometry(hpond, apond, dhpond=dhpond, hin=hin, hsn=hsn)
                if (icepack_warnings_aborted(subname)) return
           else
                hpond = hpond - w * dt / apond
@@ -3289,7 +3289,7 @@
                call calc_ice_mass(phi, zTin, hilyr, ice_mass)
                if (icepack_warnings_aborted(subname)) return
                hocn = (ice_mass + hpond*apond*rhofresh + hsn*rhos)/rhow
-               call pond_height(apond, hpond, hin, hpsurf)
+               call pond_height(apond, hpond, hin, hsn, hpsurf)
                if (icepack_warnings_aborted(subname)) return
                head = hpsurf - hocn
                dhpond = max(min(c0, -lambda_pond*dt*head), -hpond)
@@ -3302,7 +3302,7 @@
           dpnd_expon = -dhpond * apond
           ! update pond depth (and area)
           if (tr_pond_sealvl) then
-               call pond_hypsometry(hpond, apond, dhpond=dhpond, hin=hin)
+               call pond_hypsometry(hpond, apond, dhpond=dhpond, hin=hin, hsn=hsn)
                if (icepack_warnings_aborted(subname)) return
           else
                if (trim(pndmacr) == 'lambda') then
@@ -3329,7 +3329,7 @@
                        sss,    qocn,     &
                        smice,  smliq,    &
                        snoice, fadvheat, &
-                       HOSE, hoseice)   ! CMB for hosing 
+                       HOSE, hoseice)   ! CMB added for hosing 
 
     ! given upwards flushing brine flow calculate amount of snow ice and
     ! convert snow to ice with appropriate properties
@@ -3358,8 +3358,8 @@
          hilyr                 ! ice layer thickness (m)
 
     real(kind=dbl_kind), intent(out) :: &
-         snoice            , &  ! snow ice formation
-         hoseice                ! CMB snow ice formation from hosing  
+         snoice            , &  ! snow ice formation (m)
+         hoseice                ! CMB snow ice formation from hosing (m)
 
    real(kind=dbl_kind), intent(inout) :: &
          fadvheat              ! advection heat flux to ocean
@@ -3393,7 +3393,7 @@
     character(len=*),parameter :: subname='(flood_ice)'
 
     snoice = c0
-    hoseice=c0
+    hoseice = c0
 
     ! check we have snow
     if (hsn > puny) then
@@ -3434,12 +3434,13 @@
              ! density of newly formed snow-ice
              rho_snowice = phi_snowice * rho_ocn + (c1 - phi_snowice) * rhoi
 
-             ! CMB comment above is poor, phi_snowice = snow porosity
-             ! CMB so (1-phi_snowice) is fraction of fresh ice within snow (where grains are)
+             ! CMB comment above is misleading, phi_snowice = snow porosity (fraction where seawater can go)
+             ! CMB so (1-phi_snowice) is fraction of fresh ice within snow (fraction where grains are)
              ! CMB flooding fills up the pore space, fresh ice stays same
-             if (hsn>0.01) then ! tends to give NaNs when hsn is very thin
+!             if (hsn>0.01) then ! otherwise tends to give NaNs when hsn is very thin
                 hoseice= HOSE/phi_snowice  ! CMB so hoseice > HOSE inflated by snow grains
-             endif
+                hoseice=min(hsn,hoseice)   ! CMB do not let hosed ice be deeper than snow
+!             endif
          endif ! freeboard_density > c0
              !       endif ! snwgrain
 
@@ -3452,7 +3453,7 @@
           call enthalpy_snow_snowice(dh, hsn, zqsn, zqsn_snowice)
           if (icepack_warnings_aborted(subname)) return
 
-          ! change thicknesses
+          ! change thicknesses and snow depth
           hin2 = hin + dh
           hsn2 = hsn - dh
 
@@ -3463,9 +3464,13 @@
           zSin_snowice = phi_snowice * sss
           zqin_snowice = phi_snowice * qocn + zqsn_snowice
 
-          ! change snow properties
-          call update_vertical_tracers_snow(zqsn, hslyr, hslyr2)
-          if (icepack_warnings_aborted(subname)) return
+          if (hslyr2 > puny) then
+            ! change snow properties
+            call update_vertical_tracers_snow(zqsn, hslyr, hslyr2)
+            if (icepack_warnings_aborted(subname)) return
+          else
+            zqsn(:) = c0 ! CMB zero snow enthalpy if no snow left
+          endif
 
           if (snwgrain .and. hslyr2 > puny) then
              call update_vertical_tracers_snow(smice, hslyr, hslyr2)
@@ -3488,7 +3493,7 @@
           hilyr = hilyr2
           hslyr = hslyr2
           snoice = dh - hoseice   ! henceforth snoice,hoseice are diagnostics for history output
-
+          
           hadded = (dh * phi_snowice) / dt
           wadded = hadded * rhoi
           eadded = hadded * qocn

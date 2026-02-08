@@ -202,7 +202,7 @@
             !-----------------------------------------------------------
             ! update pond area and depth
             !-----------------------------------------------------------
-            call pond_hypsometry(hpnd, apnd, dvpond=dvpondn, hin=hi)
+            call pond_hypsometry(hpnd, apnd, dvpond=dvpondn, hin=hi, hsn=hs)
             if (icepack_warnings_aborted(subname)) return
 
             dhpond = c0
@@ -221,7 +221,7 @@
             endif
             dhpond = min(dhpond, c0) ! strictly drainage
             dpnd_freebdn = - dhpond * apnd
-            call pond_hypsometry(hpnd, apnd, dhpond=dhpond, hin=hi)
+            call pond_hypsometry(hpnd, apnd, dhpond=dhpond, hin=hi, hsn=hs)
             if (icepack_warnings_aborted(subname)) return
 
             ! clean up empty ponds. Note, this implies that if ponds
@@ -240,7 +240,7 @@
 
             if (ktherm /= 2 .and. hpnd > c0 .and. dpscale > puny) then
                draft = (rhos*hs + rhoi*hi + rhofresh*hpnd*apnd)/rhow
-               call pond_height(apnd, hpnd, hi, hpsurf)
+               call pond_height(apnd, hpnd, hi, hs, hpsurf)
                if (icepack_warnings_aborted(subname)) return
                pressure_head = gravit * rhow * max(hpsurf - draft, c0)
                Tmlt(:) = -sicen(:) * depressT
@@ -250,7 +250,7 @@
                drain = perm*pressure_head*dt/(viscosity_dyn*hi)*dpscale
                dhpond = -min(drain, hpnd)
                dpnd_flushn = -dhpond * apnd
-               call pond_hypsometry(hpnd, apnd, dhpond=dhpond, hin=hi)
+               call pond_hypsometry(hpnd, apnd, dhpond=dhpond, hin=hi, hsn=hs)
                if (icepack_warnings_aborted(subname)) return
             endif
          endif ! hi < hi_min
@@ -323,7 +323,7 @@
 
 ! compute the changes in pond area and depth
 
-      subroutine pond_hypsometry(hpnd, apnd, dhpond, dvpond, hin)
+      subroutine pond_hypsometry(hpnd, apnd, dhpond, dvpond, hin, hsn)
 
       real (kind=dbl_kind), intent(inout) :: &
          hpnd, &   ! pond depth of ponded area tracer
@@ -332,7 +332,8 @@
       real (kind=dbl_kind), intent(in), optional :: &
          dvpond, & ! incoming change in pond volume per category area
          dhpond, & ! incoming change in pond depth
-         hin       ! category ice thickness
+         hin,    & ! category ice thickness
+         hsn       ! category snow thickness
 
       ! local variables
 
@@ -365,6 +366,14 @@
          return
       endif
 
+      ! Check that category ice thickness is present if needed
+      if ((trim(pndhyps) == 'sealevel') .and. (.not. present(hsn))) then
+         call icepack_warnings_setabort(.true.,__FILE__,__LINE__)
+         call icepack_warnings_add(subname// &
+            " hsn needed for sealevel ponds")
+         return
+      endif
+
       ! Get the change in volume
       if (present(dvpond)) then
          dv = dvpond
@@ -380,7 +389,7 @@
          hpnd = c0
       else
          if (trim(pndhyps) == 'sealevel') then
-            pndasp = calc_pndasp(hin)
+            pndasp = calc_pndasp(hin, hsn, apnd, vp)   ! CMB sent hsn and apnd too
          elseif (trim(pndhyps) == 'fixed') then
             pndasp = pndaspect
          else
@@ -391,11 +400,11 @@
          endif
          apnd = sqrt(vp/pndasp)
          ! preserve pond volume if pond fills all available area
-         hpnd = c0
+         hpnd = c0 ! CMB notes this is not needed, but no harm either
          if (apnd < c1) then
             hpnd = apnd * pndasp
          else
-            apnd = 1 ! ponds fill entire category
+            apnd = c1 ! ponds fill entire category  CMB changed from 1 to c1
             hpnd = vp ! conserve volume
          endif
       endif
@@ -406,10 +415,11 @@
 
 ! compute the height of pond upper surface above mean base of ice
 
-      subroutine pond_height(apond, hpnd, hin, hpsurf)
+      subroutine pond_height(apond, hpnd, hin, hsn, hpsurf)
 
          real (kind=dbl_kind), intent(in) :: &
-            hin  , & ! category mean ice thickness
+            hin  , & ! category ice thickness
+            hsn  , & ! category snow thickness
             apond , & ! pond area fraction of the category
             hpnd     ! mean pond depth (m)
 
@@ -418,6 +428,7 @@
 
          ! local variables
          real (kind=dbl_kind) :: &
+            vp , &   ! pond volume
             pndasp   ! pond aspect ratio
 
          character(len=*),parameter :: subname='(pond_height)'
@@ -432,7 +443,8 @@
                ! of double the aspect ratio.
                ! If ponds occupy lowest elevations first.
                if (trim(pndhyps) == 'sealevel') then
-                  pndasp = calc_pndasp(hin)
+                  vp = apond*hpnd
+                  pndasp = calc_pndasp(hin,hsn,apond,vp)
                else
                   pndasp = pndaspect
                endif
@@ -458,11 +470,14 @@
 
 !=======================================================================
 
-      function calc_pndasp(hin) &
+      function calc_pndasp(hin,hsn,apnd,vp) &
                            result(pndasp)
 
          real (kind=dbl_kind), intent(in) :: &
-            hin   ! category mean ice thickness (m)
+            hin, &   ! category ice thickness (m)
+            hsn, &   ! category sno thickness (m)
+            apnd,&   ! pond fraction coverage of aicen
+            vp       ! pond volume
 
          real (kind=dbl_kind) :: &
             pndasp ! pond aspect ratio
@@ -470,8 +485,16 @@
          character(len=*),parameter :: subname='(calc_pndasp)'
 
          ! Compute the pond aspect ratio for sea level ponds
-         pndasp = hin*(rhow - rhosi) / &
-            (rhofresh*apnd_sl**c2 - c2*rhow*apnd_sl + rhow)
+         ! original DCS formula
+!         pndasp = (hin*(rhow - rhosi) ) / &
+!            (rhofresh*apnd_sl**c2 - c2*rhow*apnd_sl + rhow)
+
+         ! CMB equation with actual snow and pond mass
+         ! whereas DCS formula has let hsn=0 and vp=pndasp*apnd_sl**c2
+         pndasp = (hin*(rhow - rhosi) - hsn*rhos - rhofresh*vp) / &
+              (rhow - c2*rhow*apnd_sl)
+         pndasp = max(pndasp,p01)
+         
 
       end function calc_pndasp
 

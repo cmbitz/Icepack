@@ -239,11 +239,15 @@
       ! ice drained layer (dl) iops
       ki_dl_mn_3bd = (/ 100.2_dbl_kind, 107.7_dbl_kind,  1309._dbl_kind /)
       wi_dl_mn_3bd = (/ .9980_dbl_kind,  .9287_dbl_kind, .0305_dbl_kind /)
+!      ki_dl_mn_3bd = ki_ssl_mn_3bd
+!      wi_dl_mn_3bd = wi_ssl_mn_3bd
       gi_dl_mn_3bd = (/ .94_dbl_kind,     .94_dbl_kind,    .94_dbl_kind /)
 
       ! ice interior layer (int) iops
       ki_int_mn_3bd = (/  20.2_dbl_kind,  27.7_dbl_kind,  1445._dbl_kind /)
       wi_int_mn_3bd = (/ .9901_dbl_kind, .7223_dbl_kind,  .0277_dbl_kind /)
+!      ki_int_mn_3bd = ki_ssl_mn_3bd
+!      wi_int_mn_3bd = wi_ssl_mn_3bd
       gi_int_mn_3bd = (/ .94_dbl_kind,    .94_dbl_kind,     .94_dbl_kind /)
 
       ! ponded ice surface scattering layer (ssl) iops

@@ -126,7 +126,7 @@
 
       integer (kind=dbl_kind), parameter :: num_3d_snoice = 1
       character(len=16), parameter :: fld_3d_snoice(num_3d_snoice) = &
-         (/ 'snoice          ' /)
+         (/ 'hsnoice          ' /)
 
       integer (kind=dbl_kind), parameter :: num_3d_pond = 8
       character(len=16), parameter :: fld_3d_pond(num_3d_pond) = &
@@ -505,31 +505,6 @@
             deallocate(value3)
          enddo
       endif !tr_pnd
-
-      if (tr_sni) then 
-         call  icepack_query_tracer_indices(nt_hsnoice_out = nt_hsnoice)
-                  start3(1) = 1
-         count3(1) = nx
-         start3(2) = 1
-         count3(2) = ncat
-         start3(3) = timcnt
-         count3(3) = 1
-
-         do n = 1,num_3d_snoice
-            allocate(value3(count3(1),count3(2),1))
-
-            value3 = -9999._dbl_kind
-            if (trim(fld_3d_snoice(n)) == 'snoice') value3(1:count3(1),1:count3(2),1) = trcrn(1:count3(1),nt_hsnoice,1:count3(2))
-
-            status = nf90_inq_varid(ncid,trim(fld_3d_snoice(n)),varid)
-            if (status /= nf90_noerr) call icedrv_system_abort(string=subname//' ERROR: inq_var '//trim(fld_3d_snoice(n)))
-            status = nf90_put_var(ncid,varid,value3,start=start3,count=count3)
-            if (status /= nf90_noerr) call icedrv_system_abort(string=subname//' ERROR: put_var '//trim(fld_3d_snoice(n)))
-
-         deallocate(value3)
-         enddo
-
-      endif ! tr_sni
 
       if (tr_fsd) then
         ! 3d nfsd fields
