@@ -1,0 +1,59 @@
+#==============================================================================
+# Makefile macros for macbook Monterey - gnu compiler
+#==============================================================================
+
+CPP        := /usr/bin/cpp
+CPPDEFS    := -DFORTRANUNDERSCORE -DNO_R16 -DHAVE_F2008_CONTIGUOUS -DLINUX -DCPRINTEL ${ICE_CPPDEFS}
+CFLAGS     := -c -fp-model precise   -xHost
+
+FIXEDFLAGS := -132
+FFLAGS     :=  -ffree-line-length-none -fconvert=big-endian -finit-real=nan
+FFLAGS_NOOPT:= -O0
+
+ifeq ($(ICE_BLDDEBUG), true)
+   FFLAGS  += -O0 -g -Wextra -fbacktrace -fbounds-check -ffpe-trap=zero,overflow
+   CFLAGS  += -O0
+else
+   FFLAGS  += -O2
+   CFLAGS  += -O2
+endif
+
+ifeq ($(ICE_COVERAGE), true) 
+   FFLAGS  += -O0 -g -fprofile-arcs -ftest-coverage
+   CFLAGS  += -O0 -g -coverage
+   LDFLAGS += -g -ftest-coverage -fprofile-arcs
+endif
+
+ifneq ($(ICE_BLDDEBUG), true) 
+ifneq ($(ICE_COVERAGE), true) 
+   FFLAGS  += -O2
+   CFLAGS  += -O2
+endif
+endif
+
+SCC := gcc
+SFC := gfortran
+#SFC := mpif90
+CC := $(SCC)
+FC := $(SFC)
+LD := $(FC)
+
+#NETCDF_PATH := $(NETCDF)
+
+ifeq ($(ICE_IOTYPE), netcdf)
+    NETCDF_PATH := /usr/local
+    INCLDIR := $(INCLDIR) -I$(NETCDF_PATH)/include
+    LIB_NETCDF := $(NETCDF_PATH)/lib
+    LIB_PNETCDF := 
+    SLIBS   := -L$(LIB_NETCDF) -lnetcdff -lnetcdf -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -llapack
+else
+    SLIBS   := -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib -llapack
+endif
+
+LIB_MPI := 
+
+ifeq ($(ICE_THREADED), true) 
+   LDFLAGS += -openmp
+   CFLAGS += -openmp
+   FFLAGS += -openmp
+endif
