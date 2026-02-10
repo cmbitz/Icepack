@@ -1666,7 +1666,7 @@
 
       if (kcatbound == -1) then ! single category
          hin_max(0) = c0
-         if (landfast) hin_max(0) = 0.2
+!         if (landfast) hin_max(0) = 0.2  ! unsuccessful since aicen fades away too slowly
          hin_max(1) = c100
 
       elseif (kcatbound == 0) then   ! original scheme
